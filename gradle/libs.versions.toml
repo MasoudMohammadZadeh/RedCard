@@ -12,6 +12,7 @@ room = "2.6.1"
 lifecycle = "2.7.0"
 coroutines = "1.7.3"
 firebaseFirestoreKtx = "25.1.4"
+foundationLayoutAndroid = "1.8.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -38,6 +39,7 @@ lifecycle-livedata = { group = "androidx.lifecycle", name = "lifecycle-livedata-
 
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtx" }
+androidx-foundation-layout-android = { group = "androidx.compose.foundation", name = "foundation-layout-android", version.ref = "foundationLayoutAndroid" }
 
 
 [plugins]

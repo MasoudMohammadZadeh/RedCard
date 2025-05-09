@@ -45,6 +45,7 @@ android {
 
 
 dependencies {
+    implementation(libs.androidx.foundation.layout.android)
     val activity_version = "1.10.1"
     val fragment_version = "1.8.6"
 

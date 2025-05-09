@@ -4,6 +4,21 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -609,4 +624,1318 @@ fun SignUpFormPreview() {
 fun onLoginSuccess() {
     // To do and pass to profile
     // Use in the login
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MyProfileScreen() {
+    var selectedItem by remember { mutableStateOf(3) } // Default to "My Profile" tab
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF222222))
+    ) {
+        // Scrollable content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally // Center content horizontally
+        ) {
+            // Profile Header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally // Center profile image and text
+            ) {
+                // Profile Image with Edit Icon
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                ) {
+                    // Profile Image (Centered)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(Color.Gray) // Placeholder for image
+                    ) {
+                        // Replace with actual image if available
+                        Image(painter = painterResource(id = R.drawable.profile1), contentDescription = "Profile Image", modifier = Modifier.fillMaxSize())
+                    }
+                    // Edit Icon with Gradient Background (Bottom Right of Profile Image)
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd) // Position at bottom-right
+                            .size(20.dp)
+                            .clip(CircleShape) // Circular shape for the button
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFFE03F46), // #E03F46 at 40%
+                                        Color(0xFFA01B22) // #A01B22 at 72%
+                                    ),
+                                    start = Offset(0f, 0f), // Top-left
+                                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY) // Bottom-right
+                                )
+                            )
+                            .clickable(onClick = { /* Handle edit */ }), // Mimic IconButton behavior
+                        // Slight offset for visibility
+                        contentAlignment = Alignment.Center // Center the icon inside the Box
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.edit),
+                            contentDescription = "Edit Profile",
+                            tint = Color.White, // White tint for the icon to contrast with gradient
+                            modifier = Modifier.size(10.dp) // Adjust icon size to fit within the button
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp)) // Space between image and text
+                // Name and Tagline (Below Image)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Arash nazari",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "#YWWK till the end",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                }
+                // My Profile Button
+                Button(
+                    onClick = { /* Handle profile action */ },
+                    modifier = Modifier
+                        .padding(top = 24.dp)
+                        .widthIn(min = 150.dp, max = 200.dp), // Controls button width
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA01B22)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "My Profile",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp)) // Increased spacing for separation
+
+            // Personal Details
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp), // Adjusted padding
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Column {
+                    DetailRow(
+                        icon = painterResource(id = R.drawable.profile),
+                        label = "Name",
+                        value = "Brian Imaneul",
+                        onClick = { /* Handle edit name */ }
+                    )
+                    DetailRow(
+                        icon = painterResource(id = R.drawable.message),
+                        label = "Email",
+                        value = "brians213@gmail.com",
+                        onClick = { /* Handle edit email */ }
+                    )
+                    DetailRow(
+                        icon = painterResource(id = R.drawable.call),
+                        label = "Phone",
+                        value = "+62 821 560 641",
+                        onClick = { /* Handle edit phone */ }
+                    )
+                }
+            }
+
+            // Bottom padding to avoid overlap with navigation bar
+            Spacer(modifier = Modifier.height(80.dp))
+        }
+
+        // Bottom Navigation (fixed at the bottom)
+        NavigationBar(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            containerColor = Color(0xFF292929),
+            contentColor = Color.White
+        ) {
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 0) Text("Home", color = Color(0xFFA01B22))
+                        if (selectedItem == 0) Spacer(modifier = Modifier.height(8.dp))
+                        if (selectedItem == 0) Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.home),
+                            contentDescription = "Home",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 0,
+                onClick = { selectedItem = 0 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 1) Text("Explore", color = Color(0xFFA01B22))
+                        if (selectedItem == 1) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 1) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.discovery),
+                            contentDescription = "Explore",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 1,
+                onClick = { selectedItem = 1 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 2) Text("Standing", color = Color(0xFFA01B22))
+                        if (selectedItem == 2) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 2) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.chart),
+                            contentDescription = "Standing",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 2,
+                onClick = { selectedItem = 2 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 3) Text("My Profile", color = Color(0xFFA01B22))
+                        if (selectedItem == 3) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 3) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.profile),
+                            contentDescription = "My Profile",
+                            modifier = Modifier.size(15.dp)
+                        )
+                        // Red dot
+//                        if (selectedItem == 3) Box(
+//                            modifier = Modifier
+//                                .align(Alignment.End)
+//                                .offset(x = 8.dp)
+//                                .size(6.dp)
+//                                .background(Color(0xFFA01B22), shape = CircleShape)
+//                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 3,
+                onClick = { selectedItem = 3 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+        }
+    }
+}
+
+// Reusable DetailRow composable for personal details
+@Composable
+fun DetailRow(
+    icon: Painter,
+    label: String,
+    value: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = icon,
+            contentDescription = "$label Icon",
+            tint = Color.White,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = label,
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+            Text(
+                text = value,
+                color = Color.White,
+                fontSize = 16.sp
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowRight,
+            contentDescription = "Edit $label",
+            tint = Color.White,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+@Composable
+fun StandingsScreen() {
+    var selectedItem by remember { mutableStateOf(2) } // Default to "Standing" tab
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF222222))
+    ) {
+        // Scrollable content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 30.dp)
+        ) {
+            // Search Bar
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 10.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.search),
+                        contentDescription = "Search",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Search your competition ...",
+                        color = Color.Gray,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+
+            // La Liga Section
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp, horizontal = 24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF222222))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.spain),
+                            contentDescription = "Spain Flag",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "La Liga",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Spain",
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowRight,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    // League Header
+
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Table Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Team",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(2f)
+                        )
+                        Text(
+                            text = "D",
+                            color = Color.White,
+                            fontSize = 14.sp,
+
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "L",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "GA",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "GD",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Pts",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Table Rows (La Liga Teams)
+                    TeamRow(
+                        logo = R.drawable.atletico,
+                        name = "Atlético Madrid",
+                        draws = "2",
+                        losses = "1",
+                        goalsAgainst = "6",
+                        goalDifference = "23",
+                        points = "38"
+                    )
+                    TeamRow(
+                        logo = R.drawable.realmadrid,
+                        name = "Real Madrid",
+                        draws = "4",
+                        losses = "3",
+                        goalsAgainst = "7",
+                        goalDifference = "15",
+                        points = "37"
+                    )
+                    TeamRow(
+                        logo = R.drawable.barcelona,
+                        name = "Barcelona",
+                        draws = "4",
+                        losses = "4",
+                        goalsAgainst = "9",
+                        goalDifference = "20",
+                        points = "34"
+                    )
+                    TeamRow(
+                        logo = R.drawable.villareal,
+                        name = "Villareal",
+                        draws = "8",
+                        losses = "2",
+                        goalsAgainst = "10",
+                        goalDifference = "16",
+                        points = "32"
+                    )
+                }
+            }
+
+            // Premier League Section
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF222222))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.england),
+                            contentDescription = "Spain Flag",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Premier League",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "England",
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowRight,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    // League Header
+
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Table Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Team",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(2f)
+                        )
+                        Text(
+                            text = "D",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "L",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "GA",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "GD",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Pts",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Table Rows (Premier League Teams)
+                    TeamRow(
+                        logo = R.drawable.liverpool,
+                        name = "Liverpool",
+                        draws = "6",
+                        losses = "2",
+                        goalsAgainst = "22",
+                        goalDifference = "16",
+                        points = "33"
+                    )
+                    TeamRow(
+                        logo = R.drawable.manu,
+                        name = "Man United",
+                        draws = "3",
+                        losses = "3",
+                        goalsAgainst = "24",
+                        goalDifference = "9",
+                        points = "33"
+                    )
+                    TeamRow(
+                        logo = R.drawable.liecster,
+                        name = "Leicester City",
+                        draws = "2",
+                        losses = "5",
+                        goalsAgainst = "21",
+                        goalDifference = "10",
+                        points = "32"
+                    )
+                    TeamRow(
+                        logo = R.drawable.arsenal,
+                        name = "Arsenal",
+                        draws = "8",
+                        losses = "2",
+                        goalsAgainst = "10",
+                        goalDifference = "16",
+                        points = "32"
+                    )
+                }
+            }
+
+            // Bottom padding to avoid overlap with navigation bar
+            Spacer(modifier = Modifier.height(80.dp))
+        }
+
+        // Bottom Navigation (fixed at the bottom)
+        NavigationBar(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            containerColor = Color(0xFF292929),
+            contentColor = Color.White
+        ) {
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 0) Text("Home", color = Color(0xFFA01B22))
+                        if (selectedItem == 0) Spacer(modifier = Modifier.height(8.dp))
+                        if (selectedItem == 0) Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.home),
+                            contentDescription = "Home",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 0,
+                onClick = { selectedItem = 0 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 1) Text("Explore", color = Color(0xFFA01B22))
+                        if (selectedItem == 1) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 1) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.discovery),
+                            contentDescription = "Explore",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 1,
+                onClick = { selectedItem = 1 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 2) Text("Standing", color = Color(0xFFA01B22))
+                        if (selectedItem == 2) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 2) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.chart),
+                            contentDescription = "Standing",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 2,
+                onClick = { selectedItem = 2 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 3) Text("My Profile", color = Color(0xFFA01B22))
+                        if (selectedItem == 3) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 3) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.profile),
+                            contentDescription = "My Profile",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 3,
+                onClick = { selectedItem = 3 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+        }
+    }
+}
+
+// Reusable TeamRow composable for table rows
+@Composable
+fun TeamRow(
+    logo: Int,
+    name: String,
+    draws: String,
+    losses: String,
+    goalsAgainst: String,
+    goalDifference: String,
+    points: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Team Logo and Name
+        Row(
+            modifier = Modifier.weight(2f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = logo),
+                contentDescription = name,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = name,
+                color = Color.White,
+                fontSize = 14.sp,
+                maxLines = 1, // Restrict to one line
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        // Draws
+        Text(
+            text = draws,
+            color = Color.White,
+            fontSize = 12.sp,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center
+        )
+        // Losses
+        Text(
+            text = losses,
+            color = Color.White,
+            fontSize = 12.sp,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center
+        )
+        // Goals Against
+        Text(
+            text = goalsAgainst,
+            color = Color.White,
+            fontSize = 12.sp,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center
+        )
+        // Goal Difference
+        Text(
+            text = goalDifference,
+            color = Color.White,
+            fontSize = 12.sp,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center
+        )
+        // Points
+        Text(
+            text = points,
+            color = Color.White,
+            fontSize = 12.sp,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+@Composable
+fun LiveScoreScreen() {
+    var selectedItem by remember { mutableStateOf(0) }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF222222))
+    ) {
+        // Scrollable content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 30.dp)
+        ) {
+            // Top App Bar
+            TopAppBar(
+                title = { Text("LiveScore", color = Color.White) },
+                actions = {
+                    IconButton(onClick = { /* Handle search */ }) {
+                        Image(
+                            painter = painterResource(id = R.drawable.search),
+                            contentDescription = "Search",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    IconButton(onClick = { /* Handle notifications */ }) {
+                        Image(
+                            painter = painterResource(id = R.drawable.notification),
+                            contentDescription = "Notifications",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF222222)
+                )
+            )
+
+            // Celebration Banner with your image
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 24.dp)
+            ) {
+                // Card with main content and fixed height
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(161.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.linearGradient(
+                                    0.0f to Color(0xFFFD2428),
+                                    0.84f to Color(0xFF5F0709)
+                                )
+                            )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight()
+                                .padding(vertical = 40.dp, horizontal = 20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.padding(end = 16.dp)) {
+                                Text(
+                                    text = "Liverpool UEFA\nChampion League\nCelebration",
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Yesterday, 06:30 PM",
+                                    color = Color.White,
+                                    fontSize = 14.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(190.dp)
+                        .align(Alignment.CenterEnd)
+                        .offset(y = -(31.dp), x = -(0.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.jamesmilner),
+                        contentDescription = "Trophy",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            // La Liga Section
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF222222))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.spain),
+                            contentDescription = "Spain Flag",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "La Liga",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Spain",
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowRight,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            // Match Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+                    .clickable { /* Handle card click */ },
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(68.dp)
+                        .padding(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(35.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF441818)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.barcelona),
+                            contentDescription = "Barcelona",
+                            modifier = Modifier.size(25.dp)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(35.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF441818)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.realmadrid),
+                            contentDescription = "Real Madrid",
+                            modifier = Modifier.size(25.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Barcelona vs Real Madrid",
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "2", color = Color.White, fontSize = 15.sp)
+                            Spacer(modifier = Modifier.width(50.dp))
+                            Text(text = "-", color = Color.White, fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(50.dp))
+                            Text(text = "0", color = Color.White, fontSize = 15.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Box(
+                        modifier = Modifier
+                            .width(47.dp)
+                            .fillMaxHeight()
+                            .background(Color(0xFF441818)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "HT",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable { /* Handle HT click */ }
+                        )
+                    }
+                }
+            }
+
+            // Premier League Section (repeated content, you can modify as needed)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF222222))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.spain),
+                            contentDescription = "Spain Flag",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Premier League",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "England",
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowRight,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            // Additional Match Cards (repeated content, you can modify as needed)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+                    .clickable { /* Handle card click */ },
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(68.dp)
+                        .padding(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(35.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF441818)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.barcelona),
+                            contentDescription = "Barcelona",
+                            modifier = Modifier.size(25.dp)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(35.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF441818)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.realmadrid),
+                            contentDescription = "Real Madrid",
+                            modifier = Modifier.size(25.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Barcelona vs Real Madrid",
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "2", color = Color.White, fontSize = 15.sp)
+                            Spacer(modifier = Modifier.width(50.dp))
+                            Text(text = "-", color = Color.White, fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(50.dp))
+                            Text(text = "0", color = Color.White, fontSize = 15.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Box(
+                        modifier = Modifier
+                            .width(47.dp)
+                            .fillMaxHeight()
+                            .background(Color(0xFF441818)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "HT",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable { /* Handle HT click */ }
+                        )
+                    }
+                }
+            }
+            // Add some bottom padding to ensure content doesn't overlap with the navigation bar
+            Spacer(modifier = Modifier.height(80.dp))
+        }
+
+        // Bottom Navigation (fixed at the bottom)
+        NavigationBar(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            containerColor = Color(0xFF292929),
+            contentColor = Color.White
+        ) {
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 0) Text("Home", color = Color(0xFFA01B22))
+                        if (selectedItem == 0) Spacer(modifier = Modifier.height(8.dp))
+                        if (selectedItem == 0) Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.home),
+                            contentDescription = "Home",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 0,
+                onClick = { selectedItem = 0 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 1) Text("Explore", color = Color(0xFFA01B22))
+                        if (selectedItem == 1) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 1) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.discovery),
+                            contentDescription = "Explore",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 1,
+                onClick = { selectedItem = 1 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 2) Text("Standing", color = Color(0xFFA01B22))
+                        if (selectedItem == 2) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 2) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.chart),
+                            contentDescription = "Standing",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 2,
+                onClick = { selectedItem = 2 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 3) Text("My Profile", color = Color(0xFFA01B22))
+                        if (selectedItem == 3) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 3) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.profile),
+                            contentDescription = "My Profile",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 3,
+                onClick = { selectedItem = 3 },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+        }
+    }
 }
