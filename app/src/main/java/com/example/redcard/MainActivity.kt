@@ -1,21 +1,52 @@
 package com.example.redcard
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -24,9 +55,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.redcard.data.UserDatabase
+import com.example.redcard.data.UserEntity
+import com.example.redcard.repository.UserRepository
 import com.example.redcard.ui.theme.RedCardTheme
+import com.example.redcard.viewmodel.UserViewModel
+import com.example.redcard.viewmodel.UserViewModelFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+
+import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.ui.*
+import androidx.compose.ui.text.*
+import androidx.compose.ui.unit.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -329,6 +373,32 @@ fun SignUpForm() {
     var phone by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val userDao = remember { UserDatabase.getInstance(context).userDao() }
+    val repository = remember { UserRepository(userDao) }
+
+
+
+    val userViewModel: UserViewModel =
+        viewModel(factory = UserViewModelFactory(repository))
+
+
+    val registerSuccess by userViewModel.registerSuccess.collectAsState()
+    val errorMessage by userViewModel.errorMessage.collectAsState()
+
+    if (registerSuccess) {
+        LaunchedEffect(registerSuccess) {
+            Toast.makeText(context, "sing up ✅", Toast.LENGTH_SHORT).show()
+            userViewModel.clearMessages()
+        }
+    }
+
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            userViewModel.clearMessages()
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -432,7 +502,15 @@ fun SignUpForm() {
         )
 
         Button(
-            onClick = { /* Handle sign up */ },
+            onClick = {
+                val user = UserEntity(
+                    name = "user",
+                    email = email,
+                    password = password,
+                    phoneNumber = phone
+                )
+                userViewModel.registerUser(user)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -443,6 +521,8 @@ fun SignUpForm() {
         }
     }
 }
+
+
 
 @Composable
 fun ImageContainer(modifier: Modifier = Modifier, imageModifier: Modifier) {
@@ -500,3 +580,5 @@ fun ImageContainer(modifier: Modifier = Modifier, imageModifier: Modifier) {
 fun SignUpFormPreview() {
     SignUpForm()
 }
+
+
