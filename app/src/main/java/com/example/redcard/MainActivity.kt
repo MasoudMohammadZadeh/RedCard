@@ -66,11 +66,6 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import androidx.compose.runtime.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.ui.*
-import androidx.compose.ui.text.*
-import androidx.compose.ui.unit.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -221,6 +216,33 @@ fun LoginForm(
     var rememberMe by remember { mutableStateOf(false) }
     var isPasswordVisible by remember { mutableStateOf(false) }
 
+
+    val context = LocalContext.current
+    val userDao = remember { UserDatabase.getInstance(context).userDao() }
+    val repository = remember { UserRepository(userDao) }
+
+    val userViewModel: UserViewModel =
+        viewModel(factory = UserViewModelFactory(repository))
+
+    val loginResult by userViewModel.loginResult.collectAsState()
+    val errorMessage by userViewModel.errorMessage.collectAsState()
+
+
+    loginResult?.let {
+        LaunchedEffect(it) {
+            Toast.makeText(context, "Welcome, ${it.name}!", Toast.LENGTH_SHORT).show()
+//            onLoginSuccess(it)
+            userViewModel.clearMessages()
+        }
+    }
+
+    errorMessage?.let {
+        LaunchedEffect(it) {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            userViewModel.clearMessages()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -326,7 +348,9 @@ fun LoginForm(
         }
 
         Button(
-            onClick = { /* Handle sign in */ },
+            onClick = { /* Handle sign in */
+                userViewModel.login(email.trim(), password.trim())
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -389,6 +413,7 @@ fun SignUpForm() {
     if (registerSuccess) {
         LaunchedEffect(registerSuccess) {
             Toast.makeText(context, "sing up ✅", Toast.LENGTH_SHORT).show()
+            // To Do
             userViewModel.clearMessages()
         }
     }
@@ -581,4 +606,7 @@ fun SignUpFormPreview() {
     SignUpForm()
 }
 
-
+fun onLoginSuccess() {
+    // To do and pass to profile
+    // Use in the login
+}
