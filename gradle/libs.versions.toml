@@ -15,6 +15,11 @@ firebaseFirestoreKtx = "25.1.4"
 foundationLayoutAndroid = "1.8.0"
 recyclerview = "1.4.0"
 media3CommonKtx = "1.6.1"
+volley = "1.2.1"
+navigationRuntimeAndroid = "2.9.0"
+navigationRuntimeDesktop = "2.9.0-beta01"
+navigationComposeJvmstubs = "2.9.0"
+navigationComposeAndroid = "2.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +49,11 @@ firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-fires
 androidx-foundation-layout-android = { group = "androidx.compose.foundation", name = "foundation-layout-android", version.ref = "foundationLayoutAndroid" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
+volley = { group = "com.android.volley", name = "volley", version.ref = "volley" }
+androidx-navigation-runtime-android = { group = "androidx.navigation", name = "navigation-runtime-android", version.ref = "navigationRuntimeAndroid" }
+androidx-navigation-runtime-desktop = { group = "androidx.navigation", name = "navigation-runtime-desktop", version.ref = "navigationRuntimeDesktop" }
+androidx-navigation-compose-jvmstubs = { group = "androidx.navigation", name = "navigation-compose-jvmstubs", version.ref = "navigationComposeJvmstubs" }
+androidx-navigation-compose-android = { group = "androidx.navigation", name = "navigation-compose-android", version.ref = "navigationComposeAndroid" }
 
 
 [plugins]

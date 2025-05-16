@@ -99,6 +99,12 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.text.TextStyle
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.redcard.model.Match
@@ -116,21 +122,33 @@ import java.util.TimeZone
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            RedCardTheme {
-//                LiveScoreScreen() // state1
-//                SearchScreen()    // state2
-//                StandingsScreen() // state3
-
-            }
+            AppNavigation()
         }
+    }
+}
+
+@Composable
+fun AppNavigation() {
+    val navController: NavHostController = rememberNavController()
+
+    NavHost(navController = navController, startDestination = "liveScore") {
+        composable("login") {
+            SportsLoginCard(navController)
+        }
+        composable("liveScore") {
+            LiveScoreScreen(viewModel() , navController) // navController رو اینجا پاس دادیم
+        }
+        composable("explore") { SearchScreen( viewModel() ,navController) }
+        composable("standing") { StandingsScreen(viewModel(),navController) }
+        composable("profile") { SportsLoginCard(navController) }
+        composable("myprofile") { MyProfileScreen(navController) }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SportsLoginCard() {
+fun SportsLoginCard(navController: NavController) {
     val loginSheetState = rememberModalBottomSheetState()
     val signUpSheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
@@ -243,7 +261,7 @@ fun SportsLoginCard() {
                 containerColor = Color(0xFF2A2A2A),
                 modifier = Modifier.fillMaxHeight(0.6f)
             ) {
-                SignUpForm()
+                SignUpForm(navController,signUpSheetState, scope)
             }
         }
     }
@@ -439,8 +457,9 @@ fun LoginForm(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignUpForm() {
+fun SignUpForm(navController: NavController, signUpSheetState: SheetState, scope: CoroutineScope) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -584,6 +603,12 @@ fun SignUpForm() {
                     phoneNumber = phone
                 )
                 userViewModel.registerUser(user)
+                scope.launch {
+                    signUpSheetState.hide()
+                    navController.navigate("myprofile") {
+                        popUpTo("MyProfileScreen") { inclusive = true }
+                    }
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -651,9 +676,9 @@ fun ImageContainer(modifier: Modifier = Modifier, imageModifier: Modifier) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
-fun SignUpFormPreview() {
-    SignUpForm()
-}
+//fun SignUpFormPreview() {
+//    SignUpForm()
+//}
 
 fun onLoginSuccess() {
     // To do and pass to profile
@@ -661,8 +686,9 @@ fun onLoginSuccess() {
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyProfileScreen() {
+fun MyProfileScreen(navController: NavHostController) {
     var selectedItem by remember { mutableStateOf(3) } // Default to "My Profile" tab
+    val currentRoute by remember { derivedStateOf { navController.currentDestination?.route } }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -796,7 +822,6 @@ fun MyProfileScreen() {
             Spacer(modifier = Modifier.height(80.dp))
         }
 
-        // Bottom Navigation (fixed at the bottom)
         NavigationBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -807,7 +832,11 @@ fun MyProfileScreen() {
             NavigationBarItem(
                 icon = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 0) Text("Home", color = Color(0xFFA01B22))
+                        if (selectedItem == 0) Text(
+                            "Home",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
                         if (selectedItem == 0) Spacer(modifier = Modifier.height(8.dp))
                         if (selectedItem == 0) Box(
                             modifier = Modifier
@@ -822,7 +851,16 @@ fun MyProfileScreen() {
                 },
                 label = null,
                 selected = selectedItem == 0,
-                onClick = { selectedItem = 0 },
+                onClick = {
+                    if (currentRoute != "liveScore") {
+                        navController.navigate("liveScore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 0
+                },
                 alwaysShowLabel = false,
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color.Transparent,
@@ -833,7 +871,11 @@ fun MyProfileScreen() {
             NavigationBarItem(
                 icon = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 1) Text("Explore", color = Color(0xFFA01B22))
+                        if (selectedItem == 1) Text(
+                            "Explore",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
                         if (selectedItem == 1) Spacer(modifier = Modifier.height(4.dp))
                         if (selectedItem == 1) Box(
                             modifier = Modifier
@@ -848,7 +890,16 @@ fun MyProfileScreen() {
                 },
                 label = null,
                 selected = selectedItem == 1,
-                onClick = { selectedItem = 1 },
+                onClick = {
+                    if (currentRoute != "explore") {
+                        navController.navigate("explore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 1
+                },
                 alwaysShowLabel = false,
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color.Transparent,
@@ -859,7 +910,11 @@ fun MyProfileScreen() {
             NavigationBarItem(
                 icon = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 2) Text("Standing", color = Color(0xFFA01B22))
+                        if (selectedItem == 2) Text(
+                            "Standing",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
                         if (selectedItem == 2) Spacer(modifier = Modifier.height(4.dp))
                         if (selectedItem == 2) Box(
                             modifier = Modifier
@@ -874,7 +929,16 @@ fun MyProfileScreen() {
                 },
                 label = null,
                 selected = selectedItem == 2,
-                onClick = { selectedItem = 2 },
+                onClick = {
+                    if (currentRoute != "standing") {
+                        navController.navigate("standing") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 2
+                },
                 alwaysShowLabel = false,
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color.Transparent,
@@ -885,7 +949,11 @@ fun MyProfileScreen() {
             NavigationBarItem(
                 icon = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 3) Text("My Profile", color = Color(0xFFA01B22))
+                        if (selectedItem == 3) Text(
+                            "My Profile",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
                         if (selectedItem == 3) Spacer(modifier = Modifier.height(4.dp))
                         if (selectedItem == 3) Box(
                             modifier = Modifier
@@ -896,19 +964,20 @@ fun MyProfileScreen() {
                             contentDescription = "My Profile",
                             modifier = Modifier.size(15.dp)
                         )
-                        // Red dot
-//                        if (selectedItem == 3) Box(
-//                            modifier = Modifier
-//                                .align(Alignment.End)
-//                                .offset(x = 8.dp)
-//                                .size(6.dp)
-//                                .background(Color(0xFFA01B22), shape = CircleShape)
-//                        )
                     }
                 },
                 label = null,
                 selected = selectedItem == 3,
-                onClick = { selectedItem = 3 },
+                onClick = {
+                    if (currentRoute != "profile") {
+                        navController.navigate("profile") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 3
+                },
                 alwaysShowLabel = false,
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color.Transparent,
@@ -966,12 +1035,12 @@ fun DetailRow(
 }
 
 @Composable
-fun StandingsScreen(standingsViewModel: StandingsViewModel = viewModel()){
+fun StandingsScreen(standingsViewModel: StandingsViewModel = viewModel() , navController: NavHostController){
     var selectedItem by remember { mutableIntStateOf(2) } // Default to "Standing" tab
 
     val laLigaState by standingsViewModel.laLigaStandings.collectAsStateWithLifecycle()
     val premierLeagueState by standingsViewModel.premierLeagueStandings.collectAsStateWithLifecycle()
-
+    val currentRoute by remember { derivedStateOf { navController.currentDestination?.route } }
 
 
     Box(
@@ -1036,6 +1105,171 @@ fun StandingsScreen(standingsViewModel: StandingsViewModel = viewModel()){
             //other Section...
 
             Spacer(modifier = Modifier.height(80.dp)) // Bottom padding
+        }
+
+        NavigationBar(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            containerColor = Color(0xFF292929),
+            contentColor = Color.White
+        ) {
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 0) Text(
+                            "Home",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 0) Spacer(modifier = Modifier.height(8.dp))
+                        if (selectedItem == 0) Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.home),
+                            contentDescription = "Home",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 0,
+                onClick = {
+                    if (currentRoute != "liveScore") {
+                        navController.navigate("liveScore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 0
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 1) Text(
+                            "Explore",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 1) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 1) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.discovery),
+                            contentDescription = "Explore",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 1,
+                onClick = {
+                    if (currentRoute != "explore") {
+                        navController.navigate("explore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 1
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 2) Text(
+                            "Standing",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 2) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 2) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.chart),
+                            contentDescription = "Standing",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 2,
+                onClick = {
+                    if (currentRoute != "standing") {
+                        navController.navigate("standing") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 2
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 3) Text(
+                            "My Profile",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 3) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 3) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.profile),
+                            contentDescription = "My Profile",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 3,
+                onClick = {
+                    if (currentRoute != "profile") {
+                        navController.navigate("profile") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 3
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
         }
     }
 }
@@ -1219,9 +1453,9 @@ fun formatUtcDateToLocalDate(utcDateString: String?, desiredFormat: String = "EE
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel()) {
+fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navController: NavController) {
     var selectedItem by remember { mutableStateOf(0) } // برای BottomNav
-
+    val currentRoute by remember { derivedStateOf { navController.currentDestination?.route } }
     val laLigaMatchesState by liveScoreViewModel.laLigaMatches.collectAsStateWithLifecycle()
     val premierLeagueMatchesState by liveScoreViewModel.premierLeagueMatches.collectAsStateWithLifecycle()
 
@@ -1450,6 +1684,172 @@ fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel()) {
                 }
             }
         }
+
+        NavigationBar(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            containerColor = Color(0xFF292929),
+            contentColor = Color.White
+        ) {
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 0) Text(
+                            "Home",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 0) Spacer(modifier = Modifier.height(8.dp))
+                        if (selectedItem == 0) Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.home),
+                            contentDescription = "Home",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 0,
+                onClick = {
+                    if (currentRoute != "liveScore") {
+                        navController.navigate("liveScore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 0
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 1) Text(
+                            "Explore",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 1) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 1) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.discovery),
+                            contentDescription = "Explore",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 1,
+                onClick = {
+                    if (currentRoute != "explore") {
+                        navController.navigate("explore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 1
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 2) Text(
+                            "Standing",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 2) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 2) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.chart),
+                            contentDescription = "Standing",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 2,
+                onClick = {
+                    if (currentRoute != "standing") {
+                        navController.navigate("standing") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 2
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 3) Text(
+                            "My Profile",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 3) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 3) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.profile),
+                            contentDescription = "My Profile",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 3,
+                onClick = {
+                    if (currentRoute != "profile") {
+                        navController.navigate("profile") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 3
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+        }
+
     }
 }
 
@@ -1597,9 +1997,9 @@ fun MatchCardComposable(match: Match) {
 
 
 @Composable
-fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel()) { // تزریق ViewModel
-    val selectedItem by remember { mutableStateOf(1) } // Default to "Explore" tab
-
+fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navController: NavHostController) { // تزریق ViewModel
+    var selectedItem by remember { mutableStateOf(1) } // Default to "Explore" tab
+    val currentRoute by remember { derivedStateOf { navController.currentDestination?.route } }
     // دریافت وضعیت بازی های آینده از ViewModel
     val upcomingMatchesState by liveScoreViewModel.upcomingMatches.collectAsStateWithLifecycle()
 
@@ -1692,6 +2092,171 @@ fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel()) { // تز
             }
         }
 
+
+        NavigationBar(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            containerColor = Color(0xFF292929),
+            contentColor = Color.White
+        ) {
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 0) Text(
+                            "Home",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 0) Spacer(modifier = Modifier.height(8.dp))
+                        if (selectedItem == 0) Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.home),
+                            contentDescription = "Home",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 0,
+                onClick = {
+                    if (currentRoute != "liveScore") {
+                        navController.navigate("liveScore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 0
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 1) Text(
+                            "Explore",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 1) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 1) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.discovery),
+                            contentDescription = "Explore",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 1,
+                onClick = {
+                    if (currentRoute != "explore") {
+                        navController.navigate("explore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 1
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 2) Text(
+                            "Standing",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 2) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 2) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.chart),
+                            contentDescription = "Standing",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 2,
+                onClick = {
+                    if (currentRoute != "standing") {
+                        navController.navigate("standing") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 2
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationBarItem(
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selectedItem == 3) Text(
+                            "My Profile",
+                            color = Color(0xFFA01B22),
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+                        if (selectedItem == 3) Spacer(modifier = Modifier.height(4.dp))
+                        if (selectedItem == 3) Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFA01B22), shape = CircleShape)
+                        ) else Icon(
+                            painter = painterResource(id = R.drawable.profile),
+                            contentDescription = "My Profile",
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                },
+                label = null,
+                selected = selectedItem == 3,
+                onClick = {
+                    if (currentRoute != "profile") {
+                        navController.navigate("profile") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    selectedItem = 3
+                },
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.White,
+                    indicatorColor = Color.Transparent
+                )
+            )
+        }
         // Bottom Navigation (ثابت در پایین) - این بخش را بدون تغییر نگه دارید اگر از آن استفاده می کنید
         // اگر BottomNav برای این صفحه لازم نیست، می توانید آن را حذف کنید یا نمایش آن را کنترل کنید.
         // NavigationBar(...)

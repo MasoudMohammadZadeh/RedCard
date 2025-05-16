@@ -49,6 +49,9 @@ dependencies {
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.media3.common.ktx)
+    implementation(libs.volley)
+    implementation(libs.androidx.navigation.runtime.android)
+    implementation(libs.androidx.navigation.compose.android)
     val activity_version = "1.10.1"
     val fragment_version = "1.8.6"
 
