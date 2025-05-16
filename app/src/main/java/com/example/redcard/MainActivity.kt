@@ -119,6 +119,8 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
+// First version by kazem
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -128,23 +130,73 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
+
+
+//@Composable
+//fun AppNavigation() {
+//    val navController: NavHostController = rememberNavController()
+//
+//    NavHost(navController = navController, startDestination = "liveScore") {
+//        composable("login") {
+//            SportsLoginCard(navController)
+//        }
+//        composable("liveScore") {
+//            LiveScoreScreen(viewModel() , navController) // navController
+//        }
+//        composable("explore") { SearchScreen( viewModel() ,navController) }
+//        composable("standing") { StandingsScreen(viewModel(),navController) }
+//        composable("profile") { SportsLoginCard(navController) }
+//        composable("myprofile") { MyProfileScreen(navController) }
+//    }
+//}
+
+
 @Composable
 fun AppNavigation() {
     val navController: NavHostController = rememberNavController()
+    val context = LocalContext.current
+    val userViewModelFactory = UserViewModelFactory(UserRepository(UserDatabase.getInstance(context).userDao()))
+//    val liveScoreViewModelFactory = LiveScoreViewModelFactory()
+//    val standingsViewModelFactory = StandingsViewModelFactory()
+
 
     NavHost(navController = navController, startDestination = "liveScore") {
         composable("login") {
             SportsLoginCard(navController)
         }
+//        composable("liveScore") {
+//            LiveScoreScreen(viewModel(factory = liveScoreViewModelFactory), navController)
+//        }
+//        composable("explore") {
+//            SearchScreen(viewModel(factory = liveScoreViewModelFactory), navController)
+//        }
+//        composable("standing") {
+//            StandingsScreen(viewModel(factory = standingsViewModelFactory), navController)
+//        }
+
+
         composable("liveScore") {
-            LiveScoreScreen(viewModel() , navController) // navController رو اینجا پاس دادیم
+            LiveScoreScreen(viewModel() , navController) // navController
         }
         composable("explore") { SearchScreen( viewModel() ,navController) }
         composable("standing") { StandingsScreen(viewModel(),navController) }
-        composable("profile") { SportsLoginCard(navController) }
-        composable("myprofile") { MyProfileScreen(navController) }
+
+        composable("profile") {
+            val userViewModel: UserViewModel = viewModel(factory = userViewModelFactory)
+            val currentUser by userViewModel.currentUser.collectAsStateWithLifecycle()
+            if (currentUser == null) {
+                SportsLoginCard(navController)
+            } else {
+                MyProfileScreen(navController, userViewModel)
+            }
+        }
+        composable("myprofile") {
+            MyProfileScreen(navController, viewModel(factory = userViewModelFactory))
+        }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -297,14 +349,20 @@ fun LoginForm(
     val errorMessage by userViewModel.errorMessage.collectAsState()
 
 
-    loginResult?.let {
-        LaunchedEffect(it) {
-            Toast.makeText(context, "Welcome, ${it.name}!", Toast.LENGTH_SHORT).show()
-//            onLoginSuccess(it)
+    LaunchedEffect(loginResult) {
+        loginResult?.let { user ->
+            Toast.makeText(context, "Welcome, ${user.name}!", Toast.LENGTH_SHORT).show()
+            scope.launch {
+                loginSheetState.hide()
+                navController.navigate("myprofile") {
+                    popUpTo("login") { inclusive = true }
+
+                    // popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                }
+            }
             userViewModel.clearMessages()
         }
     }
-
     errorMessage?.let {
         LaunchedEffect(it) {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -419,12 +477,6 @@ fun LoginForm(
         Button(
             onClick = { /* Handle sign in */
                 userViewModel.login(email.trim(), password.trim())
-                scope.launch {
-                    signUpSheetState.hide()
-                    navController.navigate("myprofile") {
-                        popUpTo("MyProfileScreen") { inclusive = true }
-                    }
-                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -486,10 +538,15 @@ fun SignUpForm(navController: NavController, signUpSheetState: SheetState, scope
     val registerSuccess by userViewModel.registerSuccess.collectAsState()
     val errorMessage by userViewModel.errorMessage.collectAsState()
 
-    if (registerSuccess) {
-        LaunchedEffect(registerSuccess) {
-            Toast.makeText(context, "sing up ✅", Toast.LENGTH_SHORT).show()
-            // To Do
+    LaunchedEffect(registerSuccess) {
+        if (registerSuccess) {
+            Toast.makeText(context, "Sign up successful! Please log in.", Toast.LENGTH_LONG).show()
+            scope.launch {
+                signUpSheetState.hide()
+                navController.navigate("login") {
+                    popUpTo("login") { inclusive = true }
+                }
+            }
             userViewModel.clearMessages()
         }
     }
@@ -605,18 +662,12 @@ fun SignUpForm(navController: NavController, signUpSheetState: SheetState, scope
         Button(
             onClick = {
                 val user = UserEntity(
-                    name = "user",
-                    email = email,
-                    password = password,
-                    phoneNumber = phone
+                    name = email.substringBefore('@'),
+                    email = email.trim(),
+                    password = password.trim(),
+                    phoneNumber = phone.trim()
                 )
                 userViewModel.registerUser(user)
-                scope.launch {
-                    signUpSheetState.hide()
-                    navController.navigate("myprofile") {
-                        popUpTo("MyProfileScreen") { inclusive = true }
-                    }
-                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -682,21 +733,32 @@ fun ImageContainer(modifier: Modifier = Modifier, imageModifier: Modifier) {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
-@Composable
+//@Preview
+//@Composable
 //fun SignUpFormPreview() {
 //    SignUpForm()
 //}
 
-fun onLoginSuccess() {
-    // To do and pass to profile
-    // Use in the login
-}
-@OptIn(ExperimentalMaterial3Api::class)
+//fun onLoginSuccess() {
+//    // To do and pass to profile
+//    // Use in the login
+//}
+//@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyProfileScreen(navController: NavHostController) {
+fun MyProfileScreen2(
+    navController: NavHostController,
+    userViewModel: UserViewModel = viewModel(
+        factory = UserViewModelFactory(
+            UserRepository(UserDatabase.getInstance(LocalContext.current).userDao())
+        )
+    )
+) {
+
     var selectedItem by remember { mutableStateOf(3) } // Default to "My Profile" tab
     val currentRoute by remember { derivedStateOf { navController.currentDestination?.route } }
+    val currentUser by userViewModel.currentUser.collectAsStateWithLifecycle()
+
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1434,8 +1496,8 @@ fun formatUtcDateToLocalTime(utcDateString: String?, desiredFormat: String = "HH
         inputFormat.timeZone = TimeZone.getTimeZone("UTC")
         val date = inputFormat.parse(utcDateString)
 
-        val outputFormat = SimpleDateFormat(desiredFormat, Locale.getDefault()) // استفاده از Locale و TimeZone دستگاه
-        outputFormat.timeZone = TimeZone.getDefault() // استفاده از TimeZone دستگاه
+        val outputFormat = SimpleDateFormat(desiredFormat, Locale.getDefault())
+        outputFormat.timeZone = TimeZone.getDefault()
         if (date != null) outputFormat.format(date) else "N/A"
     } catch (e: ParseException) {
         Log.e("DateUtils", "Error parsing date: $utcDateString", e)
@@ -1462,7 +1524,7 @@ fun formatUtcDateToLocalDate(utcDateString: String?, desiredFormat: String = "EE
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navController: NavController) {
-    var selectedItem by remember { mutableStateOf(0) } // برای BottomNav
+    var selectedItem by remember { mutableStateOf(0) }
     val currentRoute by remember { derivedStateOf { navController.currentDestination?.route } }
     val laLigaMatchesState by liveScoreViewModel.laLigaMatches.collectAsStateWithLifecycle()
     val premierLeagueMatchesState by liveScoreViewModel.premierLeagueMatches.collectAsStateWithLifecycle()
@@ -1475,7 +1537,7 @@ fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navCo
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 56.dp) // برای اینکه محتوا زیر BottomNav نرود
+                .padding(bottom = 56.dp)
         ) {
             // ==================== Top App Bar ====================
             TopAppBar(
@@ -1483,21 +1545,21 @@ fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navCo
                 actions = {
                     IconButton(onClick = { /* TODO: Handle search action */ }) {
                         Image(
-                            painter = painterResource(id = R.drawable.search), // مطمئن شوید این drawable وجود دارد
+                            painter = painterResource(id = R.drawable.search),
                             contentDescription = "Search",
                             modifier = Modifier.size(24.dp)
                         )
                     }
                     IconButton(onClick = { /* TODO: Handle notifications action */ }) {
                         Image(
-                            painter = painterResource(id = R.drawable.notification), // مطمئن شوید این drawable وجود دارد
+                            painter = painterResource(id = R.drawable.notification),
                             contentDescription = "Notifications",
                             modifier = Modifier.size(24.dp)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF222222) // همان رنگ پس‌زمینه صفحه
+                    containerColor = Color(0xFF222222)
                 )
             )
             // ================= End Top App Bar ===================
@@ -1506,14 +1568,14 @@ fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navCo
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp) // کمی padding عمودی کمتر
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp), // ارتفاع کمی تغییر کرد
-                    shape = RoundedCornerShape(12.dp), // کمی گردتر
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent) // برای اعمال گرادیانت روی Box داخلی
+                        .height(150.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                 ) {
                     Box(
                         modifier = Modifier
@@ -1533,11 +1595,11 @@ fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navCo
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(
-                                modifier = Modifier.weight(1f), // برای اینکه متن فضای بیشتری بگیرد
+                                modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = "Liverpool UEFA\nChampion League\nCelebration", // می‌توانید این متن را داینامیک کنید
+                                    text = "Liverpool UEFA\nChampion League\nCelebration",
                                     color = Color.White,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
@@ -1545,27 +1607,25 @@ fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navCo
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Yesterday, 06:30 PM", // این متن هم می‌تواند داینامیک باشد
+                                    text = "Yesterday, 06:30 PM",
                                     color = Color.White.copy(alpha = 0.8f),
                                     fontSize = 13.sp
                                 )
                             }
-                            // تصویر بازیکن در سمت راست بنر، خارج از این Row قرار می‌گیرد تا روی آن بیفتد
                         }
                     }
                 }
 
-                // تصویر بازیکن که روی بنر قرار می‌گیرد
                 Image(
-                    painter = painterResource(id = R.drawable.jamesmilner), // مطمئن شوید این drawable وجود دارد
+                    painter = painterResource(id = R.drawable.jamesmilner),
                     contentDescription = "Trophy Celebration",
-                    contentScale = ContentScale.Crop, // یا ContentScale.Fit بر اساس تصویر
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .align(Alignment.CenterEnd) // چینش در پایین و راستِ Box والد
-                        .offset(x = (1).dp, y = (1).dp) // کمی بیرون زدگی و به سمت بالا
-                        .width(120.dp) // اندازه تصویر
-                        .height(160.dp) // متناسب با ارتفاع بنر
-                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)) // اگر می‌خواهید گوشه‌های تصویر گرد باشد
+                        .align(Alignment.CenterEnd)
+                        .offset(x = (1).dp, y = (1).dp)
+                        .width(120.dp)
+                        .height(160.dp)
+                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
 
                 )
             }
@@ -1588,7 +1648,7 @@ fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navCo
                                     .fillMaxWidth()
                                     .padding(16.dp)
                                     .wrapContentWidth(Alignment.CenterHorizontally),
-                                color = Color(0xFFA01B22) // رنگ برند
+                                color = Color(0xFFA01B22)
                             )
                         }
                     }
@@ -1646,7 +1706,7 @@ fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navCo
                                     .fillMaxWidth()
                                     .padding(16.dp)
                                     .wrapContentWidth(Alignment.CenterHorizontally),
-                                color = Color(0xFFA01B22) // رنگ برند
+                                color = Color(0xFFA01B22)
                             )
                         }
                     }
@@ -1922,14 +1982,13 @@ fun MatchCardComposable(match: Match) {
                 .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), // Updated padding
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Team میزبان
             Row(modifier = Modifier.weight(2.5f), verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current).data(match.homeTeam.crest).crossfade(true).build(),
                     placeholder = painterResource(R.drawable.ic_launcher_background),
                     error = painterResource(R.drawable.ic_launcher_background),
                     contentDescription = match.homeTeam.name,
-                    modifier = Modifier.size(28.dp).clip(CircleShape) // کمی بزرگتر
+                    modifier = Modifier.size(28.dp).clip(CircleShape)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -1938,15 +1997,14 @@ fun MatchCardComposable(match: Match) {
                     fontSize = 14.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Start // برای اطمینان از چینش متن
+                    textAlign = TextAlign.Start
                 )
             }
 
 
-            // بخش امتیاز و زمان در وسط
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(1.5f) // وزن برای انعطاف‌پذیری
+                modifier = Modifier.weight(1.5f)
             ) {
                 if (match.status == "FINISHED" || match.status == "IN_PLAY" || match.status == "PAUSED" || match.status == "LIVE") {
                     Text(
@@ -1966,13 +2024,13 @@ fun MatchCardComposable(match: Match) {
                 Text(
                     text = when (match.status) {
                         "SCHEDULED", "TIMED" -> formatUtcDateToLocalDate(match.utcDate, "d MMM")
-                        "IN_PLAY" -> "${match.minute ?: ""}′" // دقیقه بازی با علامت پریم
+                        "IN_PLAY" -> "${match.minute ?: ""}′"
                         "PAUSED" -> "HT"
                         "FINISHED" -> "FT"
                         "POSTPONED" -> "POSTP"
                         "SUSPENDED" -> "SUSP"
                         "CANCELED" -> "CANC"
-                        else -> match.status.take(4) // نمایش ۴ حرف اول وضعیت‌های دیگر
+                        else -> match.status.take(4)
                     },
                     color = Color.Gray,
                     fontSize = 11.sp,
@@ -1980,7 +2038,6 @@ fun MatchCardComposable(match: Match) {
                 )
             }
 
-            // Team مهمان
             Row(modifier = Modifier.weight(2.5f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
                 Text(
                     text = match.awayTeam.shortName ?: match.awayTeam.name,
@@ -1988,7 +2045,7 @@ fun MatchCardComposable(match: Match) {
                     fontSize = 14.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.End // برای اطمینان از چینش متن
+                    textAlign = TextAlign.End
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 AsyncImage(
@@ -2005,10 +2062,9 @@ fun MatchCardComposable(match: Match) {
 
 
 @Composable
-fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navController: NavHostController) { // تزریق ViewModel
+fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navController: NavHostController) { //  ViewModel
     var selectedItem by remember { mutableStateOf(1) } // Default to "Explore" tab
     val currentRoute by remember { derivedStateOf { navController.currentDestination?.route } }
-    // دریافت وضعیت بازی های آینده از ViewModel
     val upcomingMatchesState by liveScoreViewModel.upcomingMatches.collectAsStateWithLifecycle()
 
     Box(
@@ -2026,7 +2082,7 @@ fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navContr
                 .padding(horizontal = 20.dp, vertical = 18.dp)
         ) {
             Text(
-                text = "Upcoming Matches", // عنوان را می توانید تغییر دهید
+                text = "All upcoming matches",
                 color = Color.White,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
@@ -2037,7 +2093,7 @@ fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navContr
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 80.dp, bottom = 56.dp) // اضافه کردن padding برای عنوان و BottomNav
+                .padding(top = 80.dp, bottom = 56.dp)
         ) {
             when (val state = upcomingMatchesState) {
                 is MatchesUiState.Loading -> {
@@ -2064,7 +2120,7 @@ fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navContr
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(state.matches, key = { match -> match.id }) { match ->
-                                MatchupItem(match = match) // onCloseClicked را می توانید حذف کنید اگر استفاده نمی شود
+                                MatchupItem(match = match)
                             }
                         }
                     }
@@ -2265,9 +2321,6 @@ fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navContr
                 )
             )
         }
-        // Bottom Navigation (ثابت در پایین) - این بخش را بدون تغییر نگه دارید اگر از آن استفاده می کنید
-        // اگر BottomNav برای این صفحه لازم نیست، می توانید آن را حذف کنید یا نمایش آن را کنترل کنید.
-        // NavigationBar(...)
     }
 }
 
@@ -2275,7 +2328,7 @@ fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel() , navContr
 @Composable
 fun MatchupItem(
     match: Match,
-    onCloseClicked: () -> Unit = {} // اختیاری: برای دکمه بستن
+    onCloseClicked: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -2299,7 +2352,7 @@ fun MatchupItem(
                     modifier = Modifier
                         .size(35.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF441818)), // رنگ پس زمینه placeholder
+                        .background(Color(0xFF441818)),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
@@ -2307,8 +2360,8 @@ fun MatchupItem(
                             .data(match.homeTeam.crest)
                             .crossfade(true)
                             .build(),
-                        placeholder = painterResource(id = R.drawable.ic_launcher_foreground), // یک placeholder مناسب بگذارید
-                        error = painterResource(id = R.drawable.ic_launcher_background), // یک error drawable مناسب بگذارید
+                        placeholder = painterResource(id = R.drawable.ic_launcher_foreground),
+                        error = painterResource(id = R.drawable.ic_launcher_background),
                         contentDescription = "${match.homeTeam.name} Logo",
                         modifier = Modifier.size(25.dp),
                         contentScale = ContentScale.Fit
@@ -2320,7 +2373,7 @@ fun MatchupItem(
                     modifier = Modifier
                         .size(35.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF441818)), // رنگ پس زمینه placeholder
+                        .background(Color(0xFF441818)),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
@@ -2371,7 +2424,7 @@ fun MatchupItem(
                 // Date and Time
                 Row {
                     Text(
-                        text = formatUtcDateToLocalDate(match.utcDate, "EEE, d MMM yyyy"), // فرمت دلخواه
+                        text = formatUtcDateToLocalDate(match.utcDate, "EEE, d MMM yyyy"),
                         color = Color.Gray,
                         fontSize = 12.sp,
                         maxLines = 1,
@@ -2379,13 +2432,13 @@ fun MatchupItem(
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
-                        text = "·", // نقطه برای جدا کردن
+                        text = "·",
                         color = Color.Gray,
                         fontSize = 12.sp
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
-                        text = formatUtcDateToLocalTime(match.utcDate, "hh:mm a"), // فرمت دلخواه
+                        text = formatUtcDateToLocalTime(match.utcDate, "hh:mm a"),
                         color = Color.Gray,
                         fontSize = 12.sp,
                         maxLines = 1,
@@ -2393,8 +2446,8 @@ fun MatchupItem(
                     )
                 }
             }
-            // Close Icon (Far Right) - شما می توانید این بخش را حذف کنید اگر نیازی نیست
-            if (onCloseClicked != {}) { // نمایش دکمه فقط اگر تابعی برای آن پاس داده شده
+            // Close Icon (Far Right)
+            if (onCloseClicked != {}) {
                 IconButton(
                     onClick = onCloseClicked,
                     modifier = Modifier.size(24.dp)
@@ -2406,6 +2459,280 @@ fun MatchupItem(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun NavIconWithLabel(iconRes: Int, label: String, isSelected: Boolean) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        if (isSelected) {
+            Text(
+                label,
+                color = Color(0xFFA01B22),
+                style = TextStyle(fontSize = 12.sp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .background(Color(0xFFA01B22), shape = CircleShape)
+            )
+        } else {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = label,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MyProfileScreen(
+    navController: NavHostController,
+    userViewModel: UserViewModel = viewModel(
+        factory = UserViewModelFactory(
+            UserRepository(UserDatabase.getInstance(LocalContext.current).userDao())
+        )
+    )
+) {
+    var selectedItem by remember { mutableIntStateOf(3) } // Default to "My Profile" tab
+    val currentRoute by remember { derivedStateOf { navController.currentDestination?.route } }
+
+    val currentUser by userViewModel.currentUser.collectAsStateWithLifecycle()
+
+
+    LaunchedEffect(currentUser, currentRoute) {
+        if (currentUser == null && currentRoute == "myprofile") {
+            navController.navigate("login") {
+                popUpTo("myprofile") { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF222222))
+    ) {
+        if (currentUser != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(top = 30.dp, bottom = 80.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Profile Header
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(modifier = Modifier.size(80.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(Color.Gray) // Placeholder
+                        ) {
+                            // TODO: In the future, the ability to upload and display user profile images from the database or server will be added.
+                            Image(
+                                painter = painterResource(id = R.drawable.profile1),
+                                contentDescription = "Profile Image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(Color(0xFFE03F46), Color(0xFFA01B22))
+                                    )
+                                )
+                                .clickable(onClick = { /* TODO: Handle edit profile image */ }),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.edit),
+                                contentDescription = "Edit Profile Image",
+                                tint = Color.White,
+                                modifier = Modifier.size(10.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = currentUser!!.name.ifBlank { "User Name" },
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Someone loves football.",
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+                    }
+                    Button(
+                        onClick = { /* TODO:  */ },
+                        modifier = Modifier
+                            .padding(top = 24.dp)
+                            .widthIn(min = 150.dp, max = 200.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA01B22)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "Edit My Profile",
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column {
+                        DetailRow(
+                            icon = painterResource(id = R.drawable.profile),
+                            label = "Name",
+                            value = currentUser!!.name.ifBlank { "Not set" },
+                            onClick = { /* TODO: Handle edit name */ }
+                        )
+                        DetailRow(
+                            icon = painterResource(id = R.drawable.message),
+                            label = "Email",
+                            value = currentUser!!.email,
+                            onClick = { /* TODO: Handle edit email */ }
+                        )
+                        DetailRow(
+                            icon = painterResource(id = R.drawable.call),
+                            label = "Phone",
+                            value = currentUser!!.phoneNumber.ifBlank { "Not set" },
+                            onClick = { /* TODO: Handle edit phone */ }
+                        )
+                        Button(
+                            onClick = {
+                                userViewModel.logoutUser()
+                                navController.navigate("login") {
+                                    popUpTo("liveScore") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Logout", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            if (currentRoute == "myprofile") {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .align(alignment = Alignment.Center)
+                        .padding(top = 50.dp),
+                    color = Color(0xFFA01B22)
+                )
+            }
+        }
+
+        // NavigationBar
+        NavigationBar(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            containerColor = Color(0xFF292929),
+            contentColor = Color.White
+        ) {
+            NavigationBarItem(
+                selected = selectedItem == 0,
+                onClick = {
+                    if (currentRoute != "liveScore") {
+                        navController.navigate("liveScore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true; restoreState = true
+                        }
+                    }
+                    selectedItem = 0
+                },
+                icon = { NavIconWithLabel(R.drawable.home, "Home", selectedItem == 0) },
+                colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent, selectedIconColor = Color(0xFFA01B22), unselectedIconColor = Color.Gray)
+            )
+            NavigationBarItem(
+                selected = selectedItem == 1,
+                onClick = {
+                    if (currentRoute != "explore") {
+                        navController.navigate("explore") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true; restoreState = true
+                        }
+                    }
+                    selectedItem = 1
+                },
+                icon = { NavIconWithLabel(R.drawable.discovery, "Explore", selectedItem == 1) },
+                colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent, selectedIconColor = Color(0xFFA01B22), unselectedIconColor = Color.Gray)
+            )
+            NavigationBarItem(
+                selected = selectedItem == 2,
+                onClick = {
+                    if (currentRoute != "standing") {
+                        navController.navigate("standing") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true; restoreState = true
+                        }
+                    }
+                    selectedItem = 2
+                },
+                icon = { NavIconWithLabel(R.drawable.chart, "Standing", selectedItem == 2) },
+                colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent, selectedIconColor = Color(0xFFA01B22), unselectedIconColor = Color.Gray)
+            )
+            NavigationBarItem(
+                selected = selectedItem == 3,
+                onClick = {
+                    if (currentUser == null) {
+                        if (currentRoute != "login") {
+                            navController.navigate("login") {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true; restoreState = true
+                            }
+                        }
+
+                    } else {
+                        if (currentRoute != "myprofile") {
+                            navController.navigate("myprofile") {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true; restoreState = true
+                            }
+                        }
+                        selectedItem = 3
+                    }
+                },
+                icon = { NavIconWithLabel(R.drawable.profile, "My Profile", selectedItem == 3 && currentUser != null) },
+                colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent, selectedIconColor = Color(0xFFA01B22), unselectedIconColor = Color.Gray)
+            )
         }
     }
 }
