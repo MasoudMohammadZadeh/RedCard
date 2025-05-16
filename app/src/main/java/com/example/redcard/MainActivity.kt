@@ -247,7 +247,8 @@ fun SportsLoginCard(navController: NavController) {
                     setShowSignUpBottomSheet = { showSignUpBottomSheet = it },
                     loginSheetState = loginSheetState,
                     signUpSheetState = signUpSheetState,
-                    scope = scope
+                    scope = scope,
+                    navController = navController
                 )
             }
         }
@@ -276,7 +277,8 @@ fun LoginForm(
     setShowSignUpBottomSheet: (Boolean) -> Unit,
     loginSheetState: SheetState,
     signUpSheetState: SheetState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    navController: NavController
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -287,7 +289,7 @@ fun LoginForm(
     val context = LocalContext.current
     val userDao = remember { UserDatabase.getInstance(context).userDao() }
     val repository = remember { UserRepository(userDao) }
-
+    val currentRoute by remember { derivedStateOf { navController.currentDestination?.route } }
     val userViewModel: UserViewModel =
         viewModel(factory = UserViewModelFactory(repository))
 
@@ -417,6 +419,12 @@ fun LoginForm(
         Button(
             onClick = { /* Handle sign in */
                 userViewModel.login(email.trim(), password.trim())
+                scope.launch {
+                    signUpSheetState.hide()
+                    navController.navigate("myprofile") {
+                        popUpTo("MyProfileScreen") { inclusive = true }
+                    }
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
