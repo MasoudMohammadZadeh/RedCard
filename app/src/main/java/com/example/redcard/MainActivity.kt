@@ -1,5 +1,8 @@
 package com.example.redcard
+
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,23 +35,38 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -81,6 +99,19 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import androidx.compose.runtime.*
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.redcard.model.Match
+import com.example.redcard.model.StandingsResponse
+import com.example.redcard.model.TableEntry
+import com.example.redcard.viewmodel.LeagueStandingsUiState
+import com.example.redcard.viewmodel.LiveScoreViewModel
+import com.example.redcard.viewmodel.MatchesUiState
+import com.example.redcard.viewmodel.StandingsViewModel
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,7 +119,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             RedCardTheme {
-                SportsLoginCard()
+//                LiveScoreScreen() // state1
+//                SearchScreen()    // state2
+//                StandingsScreen() // state3
+
             }
         }
     }
@@ -930,22 +964,28 @@ fun DetailRow(
         )
     }
 }
+
 @Composable
-fun StandingsScreen() {
-    var selectedItem by remember { mutableStateOf(2) } // Default to "Standing" tab
+fun StandingsScreen(standingsViewModel: StandingsViewModel = viewModel()){
+    var selectedItem by remember { mutableIntStateOf(2) } // Default to "Standing" tab
+
+    val laLigaState by standingsViewModel.laLigaStandings.collectAsStateWithLifecycle()
+    val premierLeagueState by standingsViewModel.premierLeagueStandings.collectAsStateWithLifecycle()
+
+
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF222222))
     ) {
-        // Scrollable content
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 30.dp)
         ) {
-            // Search Bar
+            // Search Bar (remains the same)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -960,7 +1000,7 @@ fun StandingsScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.search),
+                        painter = painterResource(id = R.drawable.search), // Replace with your actual drawable
                         contentDescription = "Search",
                         tint = Color.Gray,
                         modifier = Modifier.size(20.dp)
@@ -975,444 +1015,136 @@ fun StandingsScreen() {
             }
 
             // La Liga Section
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp, horizontal = 24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF222222))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.spain),
-                            contentDescription = "Spain Flag",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "La Liga",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Spain",
-                                color = Color.White,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
+            LeagueSection(
+                leagueName = "La Liga",
+                countryName = "Spain",
+                flagResId = R.drawable.spain,
+                uiState = laLigaState
+            )
+            { standingsViewModel.fetchStandingsForLeague(StandingsViewModel.LA_LIGA_CODE) } // Use ClassName.CODE
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    // League Header
-
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Table Header
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Team",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(2f)
-                        )
-                        Text(
-                            text = "D",
-                            color = Color.White,
-                            fontSize = 14.sp,
-
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "L",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "GA",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "GD",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "Pts",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Table Rows (La Liga Teams)
-                    TeamRow(
-                        logo = R.drawable.atletico,
-                        name = "Atlético Madrid",
-                        draws = "2",
-                        losses = "1",
-                        goalsAgainst = "6",
-                        goalDifference = "23",
-                        points = "38"
-                    )
-                    TeamRow(
-                        logo = R.drawable.realmadrid,
-                        name = "Real Madrid",
-                        draws = "4",
-                        losses = "3",
-                        goalsAgainst = "7",
-                        goalDifference = "15",
-                        points = "37"
-                    )
-                    TeamRow(
-                        logo = R.drawable.barcelona,
-                        name = "Barcelona",
-                        draws = "4",
-                        losses = "4",
-                        goalsAgainst = "9",
-                        goalDifference = "20",
-                        points = "34"
-                    )
-                    TeamRow(
-                        logo = R.drawable.villareal,
-                        name = "Villareal",
-                        draws = "8",
-                        losses = "2",
-                        goalsAgainst = "10",
-                        goalDifference = "16",
-                        points = "32"
-                    )
-                }
-            }
 
             // Premier League Section
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF222222))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.england),
-                            contentDescription = "Spain Flag",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "Premier League",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "England",
-                                color = Color.White,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    // League Header
-
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Table Header
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Team",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(2f)
-                        )
-                        Text(
-                            text = "D",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "L",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "GA",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "GD",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "Pts",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Table Rows (Premier League Teams)
-                    TeamRow(
-                        logo = R.drawable.liverpool,
-                        name = "Liverpool",
-                        draws = "6",
-                        losses = "2",
-                        goalsAgainst = "22",
-                        goalDifference = "16",
-                        points = "33"
-                    )
-                    TeamRow(
-                        logo = R.drawable.manu,
-                        name = "Man United",
-                        draws = "3",
-                        losses = "3",
-                        goalsAgainst = "24",
-                        goalDifference = "9",
-                        points = "33"
-                    )
-                    TeamRow(
-                        logo = R.drawable.liecster,
-                        name = "Leicester City",
-                        draws = "2",
-                        losses = "5",
-                        goalsAgainst = "21",
-                        goalDifference = "10",
-                        points = "32"
-                    )
-                    TeamRow(
-                        logo = R.drawable.arsenal,
-                        name = "Arsenal",
-                        draws = "8",
-                        losses = "2",
-                        goalsAgainst = "10",
-                        goalDifference = "16",
-                        points = "32"
-                    )
-                }
-            }
-
-            // Bottom padding to avoid overlap with navigation bar
-            Spacer(modifier = Modifier.height(80.dp))
-        }
-
-        // Bottom Navigation (fixed at the bottom)
-        NavigationBar(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            containerColor = Color(0xFF292929),
-            contentColor = Color.White
-        ) {
-            NavigationBarItem(
-                icon = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 0) Text("Home", color = Color(0xFFA01B22))
-                        if (selectedItem == 0) Spacer(modifier = Modifier.height(8.dp))
-                        if (selectedItem == 0) Box(
-                            modifier = Modifier
-                                .size(4.dp)
-                                .background(Color(0xFFA01B22), shape = CircleShape)
-                        ) else Icon(
-                            painter = painterResource(id = R.drawable.home),
-                            contentDescription = "Home",
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                },
-                label = null,
-                selected = selectedItem == 0,
-                onClick = { selectedItem = 0 },
-                alwaysShowLabel = false,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Transparent,
-                    unselectedIconColor = Color.White,
-                    indicatorColor = Color.Transparent
-                )
+            LeagueSection(
+                leagueName = "Premier League",
+                countryName = "England",
+                flagResId = R.drawable.england,
+                uiState = premierLeagueState
             )
-            NavigationBarItem(
-                icon = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 1) Text("Explore", color = Color(0xFFA01B22))
-                        if (selectedItem == 1) Spacer(modifier = Modifier.height(4.dp))
-                        if (selectedItem == 1) Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFFA01B22), shape = CircleShape)
-                        ) else Icon(
-                            painter = painterResource(id = R.drawable.discovery),
-                            contentDescription = "Explore",
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                },
-                label = null,
-                selected = selectedItem == 1,
-                onClick = { selectedItem = 1 },
-                alwaysShowLabel = false,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Transparent,
-                    unselectedIconColor = Color.White,
-                    indicatorColor = Color.Transparent
-                )
-            )
-            NavigationBarItem(
-                icon = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 2) Text("Standing", color = Color(0xFFA01B22))
-                        if (selectedItem == 2) Spacer(modifier = Modifier.height(4.dp))
-                        if (selectedItem == 2) Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFFA01B22), shape = CircleShape)
-                        ) else Icon(
-                            painter = painterResource(id = R.drawable.chart),
-                            contentDescription = "Standing",
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                },
-                label = null,
-                selected = selectedItem == 2,
-                onClick = { selectedItem = 2 },
-                alwaysShowLabel = false,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Transparent,
-                    unselectedIconColor = Color.White,
-                    indicatorColor = Color.Transparent
-                )
-            )
-            NavigationBarItem(
-                icon = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 3) Text("My Profile", color = Color(0xFFA01B22))
-                        if (selectedItem == 3) Spacer(modifier = Modifier.height(4.dp))
-                        if (selectedItem == 3) Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFFA01B22), shape = CircleShape)
-                        ) else Icon(
-                            painter = painterResource(id = R.drawable.profile),
-                            contentDescription = "My Profile",
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                },
-                label = null,
-                selected = selectedItem == 3,
-                onClick = { selectedItem = 3 },
-                alwaysShowLabel = false,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Transparent,
-                    unselectedIconColor = Color.White,
-                    indicatorColor = Color.Transparent
-                )
-            )
+            { standingsViewModel.fetchStandingsForLeague(StandingsViewModel.PREMIER_LEAGUE_CODE) } // Use ClassName.CODE
+
+            //other Section...
+
+            Spacer(modifier = Modifier.height(80.dp)) // Bottom padding
         }
     }
 }
 
-// Reusable TeamRow composable for table rows
 @Composable
-fun TeamRow(
-    logo: Int,
-    name: String,
-    draws: String,
-    losses: String,
-    goalsAgainst: String,
-    goalDifference: String,
-    points: String
+fun LeagueSection(
+    leagueName: String,
+    countryName: String,
+    flagResId: Int,
+    uiState: LeagueStandingsUiState,
+    onRetry: () -> Unit
 ) {
+    // League Header Card
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp, horizontal = 24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF222222)) // Match screen background
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = flagResId),
+                contentDescription = "$countryName Flag",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(text = leagueName, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(text = countryName, color = Color.White, fontSize = 14.sp)
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = "More",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+
+    // Standings Table Card
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Table Header Row (static)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Team", color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(3f)) // Increased weight for team name
+                Text(text = "W", color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                Text(text = "D", color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                Text(text = "L", color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                Text(text = "GA", color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                Text(text = "GD", color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                Text(text = "Pts", color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Table Content based on UI State
+            when (uiState) {
+                is LeagueStandingsUiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        color = Color.White
+                    )
+                }
+                is LeagueStandingsUiState.Success -> {
+                    if (uiState.standingsTable.isEmpty()) {
+                        Text(
+                            "No standings data available.",
+                            color = Color.Gray,
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 16.dp)
+                        )
+                    } else {
+                        uiState.standingsTable.forEach { teamEntry ->
+                            TeamRow(teamEntry = teamEntry)
+                        }
+                    }
+                }
+                is LeagueStandingsUiState.Error -> {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Text("Error: ${uiState.message}", color = Color.Red)
+                        Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA01B22))) {
+                            Text("Retry", color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TeamRow(teamEntry: TableEntry) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1421,521 +1153,687 @@ fun TeamRow(
     ) {
         // Team Logo and Name
         Row(
-            modifier = Modifier.weight(2f),
+            modifier = Modifier.weight(3f), // Increased weight
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = logo),
-                contentDescription = name,
-                modifier = Modifier.size(24.dp)
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(teamEntry.team.crest)
+                    .crossfade(true)
+                    .build(),
+                placeholder = painterResource(R.drawable.ic_launcher_foreground), // Add a placeholder drawable
+                error = painterResource(R.drawable.spain), // Add an error drawable
+                contentDescription = "${teamEntry.team.name} crest",
+                modifier = Modifier.size(24.dp),
+                contentScale = ContentScale.Fit
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = name,
+                text = teamEntry.team.shortName ?: teamEntry.team.name, // Prefer shortName
                 color = Color.White,
                 fontSize = 14.sp,
-                maxLines = 1, // Restrict to one line
-                overflow = TextOverflow.Ellipsis,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
-        // Draws
-        Text(
-            text = draws,
-            color = Color.White,
-            fontSize = 12.sp,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
-        )
-        // Losses
-        Text(
-            text = losses,
-            color = Color.White,
-            fontSize = 12.sp,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
-        )
-        // Goals Against
-        Text(
-            text = goalsAgainst,
-            color = Color.White,
-            fontSize = 12.sp,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
-        )
-        // Goal Difference
-        Text(
-            text = goalDifference,
-            color = Color.White,
-            fontSize = 12.sp,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
-        )
-        // Points
-        Text(
-            text = points,
-            color = Color.White,
-            fontSize = 12.sp,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
-        )
+        Text(text = teamEntry.won.toString(), color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+        Text(text = teamEntry.draw.toString(), color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+        Text(text = teamEntry.lost.toString(), color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+        Text(text = teamEntry.goalsAgainst.toString(), color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+        Text(text = teamEntry.goalDifference.toString(), color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+        Text(text = teamEntry.points.toString(), color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
     }
 }
+
+fun formatUtcDateToLocalTime(utcDateString: String?, desiredFormat: String = "HH:mm"): String {
+    if (utcDateString == null) return "N/A"
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH)
+        inputFormat.timeZone = TimeZone.getTimeZone("UTC")
+        val date = inputFormat.parse(utcDateString)
+
+        val outputFormat = SimpleDateFormat(desiredFormat, Locale.getDefault()) // استفاده از Locale و TimeZone دستگاه
+        outputFormat.timeZone = TimeZone.getDefault() // استفاده از TimeZone دستگاه
+        if (date != null) outputFormat.format(date) else "N/A"
+    } catch (e: ParseException) {
+        Log.e("DateUtils", "Error parsing date: $utcDateString", e)
+        "Invalid Date"
+    }
+}
+
+fun formatUtcDateToLocalDate(utcDateString: String?, desiredFormat: String = "EEE, d MMM"): String {
+    if (utcDateString == null) return "N/A"
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH)
+        inputFormat.timeZone = TimeZone.getTimeZone("UTC")
+        val date = inputFormat.parse(utcDateString)
+
+        val outputFormat = SimpleDateFormat(desiredFormat, Locale.getDefault())
+        outputFormat.timeZone = TimeZone.getDefault()
+        if (date != null) outputFormat.format(date) else "N/A"
+    } catch (e: ParseException) {
+        Log.e("DateUtils", "Error parsing date: $utcDateString", e)
+        "Invalid Date"
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LiveScoreScreen() {
-    var selectedItem by remember { mutableStateOf(0) }
+fun LiveScoreScreen(liveScoreViewModel: LiveScoreViewModel = viewModel()) {
+    var selectedItem by remember { mutableStateOf(0) } // برای BottomNav
+
+    val laLigaMatchesState by liveScoreViewModel.laLigaMatches.collectAsStateWithLifecycle()
+    val premierLeagueMatchesState by liveScoreViewModel.premierLeagueMatches.collectAsStateWithLifecycle()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF222222))
     ) {
-        // Scrollable content
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(vertical = 30.dp)
+                .padding(bottom = 56.dp) // برای اینکه محتوا زیر BottomNav نرود
         ) {
-            // Top App Bar
+            // ==================== Top App Bar ====================
             TopAppBar(
-                title = { Text("LiveScore", color = Color.White) },
+                title = { Text("LiveScore", color = Color.White, fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { /* Handle search */ }) {
+                    IconButton(onClick = { /* TODO: Handle search action */ }) {
                         Image(
-                            painter = painterResource(id = R.drawable.search),
+                            painter = painterResource(id = R.drawable.search), // مطمئن شوید این drawable وجود دارد
                             contentDescription = "Search",
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                    IconButton(onClick = { /* Handle notifications */ }) {
+                    IconButton(onClick = { /* TODO: Handle notifications action */ }) {
                         Image(
-                            painter = painterResource(id = R.drawable.notification),
+                            painter = painterResource(id = R.drawable.notification), // مطمئن شوید این drawable وجود دارد
                             contentDescription = "Notifications",
                             modifier = Modifier.size(24.dp)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF222222)
+                    containerColor = Color(0xFF222222) // همان رنگ پس‌زمینه صفحه
                 )
             )
+            // ================= End Top App Bar ===================
 
-            // Celebration Banner with your image
+            // ================= Celebration Banner ================
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 24.dp)
+                    .padding(horizontal = 24.dp, vertical = 16.dp) // کمی padding عمودی کمتر
             ) {
-                // Card with main content and fixed height
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(161.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                        .height(150.dp), // ارتفاع کمی تغییر کرد
+                    shape = RoundedCornerShape(12.dp), // کمی گردتر
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent) // برای اعمال گرادیانت روی Box داخلی
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
                                 brush = Brush.linearGradient(
-                                    0.0f to Color(0xFFFD2428),
-                                    0.84f to Color(0xFF5F0709)
+                                    colors = listOf(Color(0xFFFD2428), Color(0xFF5F0709)),
+                                    start = Offset.Zero,
+                                    end = Offset.Infinite
                                 )
                             )
                     ) {
                         Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight()
-                                .padding(vertical = 40.dp, horizontal = 20.dp),
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(modifier = Modifier.padding(end = 16.dp)) {
+                            Column(
+                                modifier = Modifier.weight(1f), // برای اینکه متن فضای بیشتری بگیرد
+                                verticalArrangement = Arrangement.Center
+                            ) {
                                 Text(
-                                    text = "Liverpool UEFA\nChampion League\nCelebration",
+                                    text = "Liverpool UEFA\nChampion League\nCelebration", // می‌توانید این متن را داینامیک کنید
                                     color = Color.White,
                                     fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = 22.sp
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Yesterday, 06:30 PM",
-                                    color = Color.White,
-                                    fontSize = 14.sp
+                                    text = "Yesterday, 06:30 PM", // این متن هم می‌تواند داینامیک باشد
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 13.sp
                                 )
                             }
-                            Spacer(modifier = Modifier.weight(1f))
+                            // تصویر بازیکن در سمت راست بنر، خارج از این Row قرار می‌گیرد تا روی آن بیفتد
                         }
                     }
                 }
 
-                Box(
+                // تصویر بازیکن که روی بنر قرار می‌گیرد
+                Image(
+                    painter = painterResource(id = R.drawable.jamesmilner), // مطمئن شوید این drawable وجود دارد
+                    contentDescription = "Trophy Celebration",
+                    contentScale = ContentScale.Crop, // یا ContentScale.Fit بر اساس تصویر
                     modifier = Modifier
-                        .size(190.dp)
-                        .align(Alignment.CenterEnd)
-                        .offset(y = -(31.dp), x = -(0.dp))
-                        .clip(RoundedCornerShape(12.dp))
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.jamesmilner),
-                        contentDescription = "Trophy",
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
+                        .align(Alignment.CenterEnd) // چینش در پایین و راستِ Box والد
+                        .offset(x = (1).dp, y = (1).dp) // کمی بیرون زدگی و به سمت بالا
+                        .width(120.dp) // اندازه تصویر
+                        .height(160.dp) // متناسب با ارتفاع بنر
+                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)) // اگر می‌خواهید گوشه‌های تصویر گرد باشد
 
-            // La Liga Section
-            Card(
+                )
+            }
+            // ============== End Celebration Banner ===============
+
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF222222))
+                    .padding(horizontal = 12.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.spain),
-                            contentDescription = "Spain Flag",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "La Liga",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Spain",
-                                color = Color.White,
-                                fontSize = 14.sp
+                // --- La Liga ---
+                item {
+                    LeagueHeader(leagueName = "La Liga", countryName = "Spain", flagResId = R.drawable.spain)
+                }
+                when (val state = laLigaMatchesState) {
+                    is MatchesUiState.Loading -> {
+                        item {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .wrapContentWidth(Alignment.CenterHorizontally),
+                                color = Color(0xFFA01B22) // رنگ برند
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            // Match Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 12.dp)
-                    .clickable { /* Handle card click */ },
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(68.dp)
-                        .padding(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(35.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF441818)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.barcelona),
-                            contentDescription = "Barcelona",
-                            modifier = Modifier.size(25.dp)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(35.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF441818)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.realmadrid),
-                            contentDescription = "Real Madrid",
-                            modifier = Modifier.size(25.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Barcelona vs Real Madrid",
-                            color = Color.White,
-                            fontSize = 16.sp
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "2", color = Color.White, fontSize = 15.sp)
-                            Spacer(modifier = Modifier.width(50.dp))
-                            Text(text = "-", color = Color.White, fontSize = 20.sp)
-                            Spacer(modifier = Modifier.width(50.dp))
-                            Text(text = "0", color = Color.White, fontSize = 15.sp)
+                    is MatchesUiState.Success -> {
+                        if (state.matches.isEmpty()) {
+                            item {
+                                Text(
+                                    "No matches found for La Liga!",
+                                    color = Color.Gray,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else {
+                            items(state.matches, key = { match -> match.id }) { match ->
+                                MatchCardComposable(match = match)
+                            }
                         }
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Box(
-                        modifier = Modifier
-                            .width(47.dp)
-                            .fillMaxHeight()
-                            .background(Color(0xFF441818)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "HT",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.clickable { /* Handle HT click */ }
-                        )
+                    is MatchesUiState.Error -> {
+                        item {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "Error: ${state.message}",
+                                    color = Color.Red,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { liveScoreViewModel.fetchWeeklyMatchesForLeague(LiveScoreViewModel.LA_LIGA_CODE) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA01B22))
+                                ) {
+                                    Text("Retry", color = Color.White)
+                                }
+                            }
+                        }
                     }
                 }
-            }
+                item { Spacer(modifier = Modifier.height(30.dp)) }
 
-            // Premier League Section (repeated content, you can modify as needed)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF222222))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.spain),
-                            contentDescription = "Spain Flag",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "Premier League",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "England",
-                                color = Color.White,
-                                fontSize = 14.sp
+                //--- PL ---
+                item {
+                    LeagueHeader(leagueName = "Premier League", countryName = "England", flagResId = R.drawable.england)
+                }
+                when (val state = premierLeagueMatchesState) {
+                    is MatchesUiState.Loading -> {
+                        item {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .wrapContentWidth(Alignment.CenterHorizontally),
+                                color = Color(0xFFA01B22) // رنگ برند
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            // Additional Match Cards (repeated content, you can modify as needed)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 12.dp)
-                    .clickable { /* Handle card click */ },
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(68.dp)
-                        .padding(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(35.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF441818)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.barcelona),
-                            contentDescription = "Barcelona",
-                            modifier = Modifier.size(25.dp)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(35.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF441818)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.realmadrid),
-                            contentDescription = "Real Madrid",
-                            modifier = Modifier.size(25.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Barcelona vs Real Madrid",
-                            color = Color.White,
-                            fontSize = 16.sp
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "2", color = Color.White, fontSize = 15.sp)
-                            Spacer(modifier = Modifier.width(50.dp))
-                            Text(text = "-", color = Color.White, fontSize = 20.sp)
-                            Spacer(modifier = Modifier.width(50.dp))
-                            Text(text = "0", color = Color.White, fontSize = 15.sp)
+                    is MatchesUiState.Success -> {
+                        if (state.matches.isEmpty()) {
+                            item {
+                                Text(
+                                    "No matches found for Premier League!",
+                                    color = Color.Gray,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else {
+                            items(state.matches, key = { match -> match.id }) { match ->
+                                MatchCardComposable(match = match)
+                            }
                         }
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Box(
-                        modifier = Modifier
-                            .width(47.dp)
-                            .fillMaxHeight()
-                            .background(Color(0xFF441818)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "HT",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.clickable { /* Handle HT click */ }
-                        )
+                    is MatchesUiState.Error -> {
+                        item {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "Error: ${state.message}",
+                                    color = Color.Red,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { liveScoreViewModel.fetchWeeklyMatchesForLeague(LiveScoreViewModel.PREMIER_LEAGUE_CODE) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA01B22))
+                                ) {
+                                    Text("Retry", color = Color.White)
+                                }
+                            }
+                        }
                     }
                 }
             }
-            // Add some bottom padding to ensure content doesn't overlap with the navigation bar
-            Spacer(modifier = Modifier.height(80.dp))
         }
+    }
+}
 
-        // Bottom Navigation (fixed at the bottom)
-        NavigationBar(
+@Composable
+fun LeagueHeader(leagueName: String, countryName: String, flagResId: Int) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF222222))
+    ) {
+        Row(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            containerColor = Color(0xFF292929),
-            contentColor = Color.White
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            NavigationBarItem(
-                icon = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 0) Text("Home", color = Color(0xFFA01B22))
-                        if (selectedItem == 0) Spacer(modifier = Modifier.height(8.dp))
-                        if (selectedItem == 0) Box(
-                            modifier = Modifier
-                                .size(4.dp)
-                                .background(Color(0xFFA01B22), shape = CircleShape)
-                        ) else Icon(
-                            painter = painterResource(id = R.drawable.home),
-                            contentDescription = "Home",
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                },
-                label = null,
-                selected = selectedItem == 0,
-                onClick = { selectedItem = 0 },
-                alwaysShowLabel = false,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Transparent,
-                    unselectedIconColor = Color.White,
-                    indicatorColor = Color.Transparent
-                )
+            Image(
+                painter = painterResource(id = flagResId),
+                contentDescription = "$countryName Flag",
+                modifier = Modifier.size(24.dp)
             )
-            NavigationBarItem(
-                icon = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 1) Text("Explore", color = Color(0xFFA01B22))
-                        if (selectedItem == 1) Spacer(modifier = Modifier.height(4.dp))
-                        if (selectedItem == 1) Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFFA01B22), shape = CircleShape)
-                        ) else Icon(
-                            painter = painterResource(id = R.drawable.discovery),
-                            contentDescription = "Explore",
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                },
-                label = null,
-                selected = selectedItem == 1,
-                onClick = { selectedItem = 1 },
-                alwaysShowLabel = false,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Transparent,
-                    unselectedIconColor = Color.White,
-                    indicatorColor = Color.Transparent
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(
+                    text = leagueName,
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
                 )
-            )
-            NavigationBarItem(
-                icon = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 2) Text("Standing", color = Color(0xFFA01B22))
-                        if (selectedItem == 2) Spacer(modifier = Modifier.height(4.dp))
-                        if (selectedItem == 2) Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFFA01B22), shape = CircleShape)
-                        ) else Icon(
-                            painter = painterResource(id = R.drawable.chart),
-                            contentDescription = "Standing",
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                },
-                label = null,
-                selected = selectedItem == 2,
-                onClick = { selectedItem = 2 },
-                alwaysShowLabel = false,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Transparent,
-                    unselectedIconColor = Color.White,
-                    indicatorColor = Color.Transparent
+                Text(
+                    text = countryName,
+                    color = Color.Gray,
+                    fontSize = 14.sp
                 )
-            )
-            NavigationBarItem(
-                icon = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (selectedItem == 3) Text("My Profile", color = Color(0xFFA01B22))
-                        if (selectedItem == 3) Spacer(modifier = Modifier.height(4.dp))
-                        if (selectedItem == 3) Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFFA01B22), shape = CircleShape)
-                        ) else Icon(
-                            painter = painterResource(id = R.drawable.profile),
-                            contentDescription = "My Profile",
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                },
-                label = null,
-                selected = selectedItem == 3,
-                onClick = { selectedItem = 3 },
-                alwaysShowLabel = false,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Transparent,
-                    unselectedIconColor = Color.White,
-                    indicatorColor = Color.Transparent
-                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = "More",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp).clickable { /* TODO: Handle click */ }
             )
         }
     }
 }
+
+@Composable
+fun MatchCardComposable(match: Match) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clickable { /* TODO: Handle match card click for details */ },
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF292929))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 72.dp)
+                .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), // Updated padding
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Team میزبان
+            Row(modifier = Modifier.weight(2.5f), verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current).data(match.homeTeam.crest).crossfade(true).build(),
+                    placeholder = painterResource(R.drawable.ic_launcher_background),
+                    error = painterResource(R.drawable.ic_launcher_background),
+                    contentDescription = match.homeTeam.name,
+                    modifier = Modifier.size(28.dp).clip(CircleShape) // کمی بزرگتر
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = match.homeTeam.shortName ?: match.homeTeam.name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Start // برای اطمینان از چینش متن
+                )
+            }
+
+
+            // بخش امتیاز و زمان در وسط
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1.5f) // وزن برای انعطاف‌پذیری
+            ) {
+                if (match.status == "FINISHED" || match.status == "IN_PLAY" || match.status == "PAUSED" || match.status == "LIVE") {
+                    Text(
+                        text = "${match.score.fullTime.home ?: "-"} - ${match.score.fullTime.away ?: "-"}",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    Text(
+                        text = formatUtcDateToLocalTime(match.utcDate),
+                        color = Color(0xFFA01B22),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Text(
+                    text = when (match.status) {
+                        "SCHEDULED", "TIMED" -> formatUtcDateToLocalDate(match.utcDate, "d MMM")
+                        "IN_PLAY" -> "${match.minute ?: ""}′" // دقیقه بازی با علامت پریم
+                        "PAUSED" -> "HT"
+                        "FINISHED" -> "FT"
+                        "POSTPONED" -> "POSTP"
+                        "SUSPENDED" -> "SUSP"
+                        "CANCELED" -> "CANC"
+                        else -> match.status.take(4) // نمایش ۴ حرف اول وضعیت‌های دیگر
+                    },
+                    color = Color.Gray,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+
+            // Team مهمان
+            Row(modifier = Modifier.weight(2.5f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
+                Text(
+                    text = match.awayTeam.shortName ?: match.awayTeam.name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.End // برای اطمینان از چینش متن
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current).data(match.awayTeam.crest).crossfade(true).build(),
+                    placeholder = painterResource(R.drawable.ic_launcher_background),
+                    error = painterResource(R.drawable.ic_launcher_background),
+                    contentDescription = match.awayTeam.name,
+                    modifier = Modifier.size(28.dp).clip(CircleShape)
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+fun SearchScreen(liveScoreViewModel: LiveScoreViewModel = viewModel()) { // تزریق ViewModel
+    val selectedItem by remember { mutableStateOf(1) } // Default to "Explore" tab
+
+    // دریافت وضعیت بازی های آینده از ViewModel
+    val upcomingMatchesState by liveScoreViewModel.upcomingMatches.collectAsStateWithLifecycle()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF222222))
+    ) {
+        // Title (Fixed at Top Center)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .align(Alignment.TopCenter) // Position at top center
+                .padding(top = 30.dp) // Match the original vertical padding
+                .background(color = Color.DarkGray, shape = RoundedCornerShape(70)) // pill shape
+                .padding(horizontal = 20.dp, vertical = 18.dp)
+        ) {
+            Text(
+                text = "Upcoming Matches", // عنوان را می توانید تغییر دهید
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+
+        // Scrollable content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 80.dp, bottom = 56.dp) // اضافه کردن padding برای عنوان و BottomNav
+        ) {
+            when (val state = upcomingMatchesState) {
+                is MatchesUiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .wrapContentWidth(Alignment.CenterHorizontally),
+                        color = Color(0xFFA01B22)
+                    )
+                }
+                is MatchesUiState.Success -> {
+                    if (state.matches.isEmpty()) {
+                        Text(
+                            "No upcoming matches found for selected leagues.",
+                            color = Color.Gray,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(state.matches, key = { match -> match.id }) { match ->
+                                MatchupItem(match = match) // onCloseClicked را می توانید حذف کنید اگر استفاده نمی شود
+                            }
+                        }
+                    }
+                }
+                is MatchesUiState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Error: ${state.message}",
+                            color = Color.Red,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                liveScoreViewModel.fetchUpcomingMatchesForLeagues(
+                                    listOf(
+                                        LiveScoreViewModel.LA_LIGA_CODE,
+                                        LiveScoreViewModel.PREMIER_LEAGUE_CODE
+                                    )
+                                )
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA01B22))
+                        ) {
+                            Text("Retry", color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Bottom Navigation (ثابت در پایین) - این بخش را بدون تغییر نگه دارید اگر از آن استفاده می کنید
+        // اگر BottomNav برای این صفحه لازم نیست، می توانید آن را حذف کنید یا نمایش آن را کنترل کنید.
+        // NavigationBar(...)
+    }
+}
+
+
+@Composable
+fun MatchupItem(
+    match: Match,
+    onCloseClicked: () -> Unit = {} // اختیاری: برای دکمه بستن
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Team Logos (Together on the Left)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Team 1 Logo (Home Team)
+                Box(
+                    modifier = Modifier
+                        .size(35.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF441818)), // رنگ پس زمینه placeholder
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(match.homeTeam.crest)
+                            .crossfade(true)
+                            .build(),
+                        placeholder = painterResource(id = R.drawable.ic_launcher_foreground), // یک placeholder مناسب بگذارید
+                        error = painterResource(id = R.drawable.ic_launcher_background), // یک error drawable مناسب بگذارید
+                        contentDescription = "${match.homeTeam.name} Logo",
+                        modifier = Modifier.size(25.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                // Team 2 Logo (Away Team)
+                Box(
+                    modifier = Modifier
+                        .size(35.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF441818)), // رنگ پس زمینه placeholder
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(match.awayTeam.crest)
+                            .crossfade(true)
+                            .build(),
+                        placeholder = painterResource(id = R.drawable.ic_launcher_foreground),
+                        error = painterResource(id = R.drawable.ic_launcher_background),
+                        contentDescription = "${match.awayTeam.name} Logo",
+                        modifier = Modifier.size(25.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            // Team Names, Dot, Date, and Time
+            Column(
+                modifier = Modifier.weight(1f), // Take remaining space
+            ) {
+                // Team Names
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f) // Limit width to prevent card growth
+                ) {
+                    Text(
+                        text = match.homeTeam.shortName ?: match.homeTeam.name,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "vs",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = match.awayTeam.shortName ?: match.awayTeam.name,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                // Date and Time
+                Row {
+                    Text(
+                        text = formatUtcDateToLocalDate(match.utcDate, "EEE, d MMM yyyy"), // فرمت دلخواه
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = "·", // نقطه برای جدا کردن
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = formatUtcDateToLocalTime(match.utcDate, "hh:mm a"), // فرمت دلخواه
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            // Close Icon (Far Right) - شما می توانید این بخش را حذف کنید اگر نیازی نیست
+            if (onCloseClicked != {}) { // نمایش دکمه فقط اگر تابعی برای آن پاس داده شده
+                IconButton(
+                    onClick = onCloseClicked,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = Color(0xFF65656B)
+                    )
+                }
+            }
+        }
+    }
+}
+

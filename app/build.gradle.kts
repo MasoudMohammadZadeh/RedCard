@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 android {
@@ -46,6 +47,8 @@ android {
 
 dependencies {
     implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.media3.common.ktx)
     val activity_version = "1.10.1"
     val fragment_version = "1.8.6"
 
@@ -81,20 +84,81 @@ dependencies {
     implementation("androidx.activity:activity-ktx:$activity_version")
     implementation("androidx.fragment:fragment-ktx:$fragment_version")
 
-    // Compose BOM برای مدیریت نسخه‌ها
     implementation(platform("androidx.compose:compose-bom:2024.05.00"))
 
-    // کامپوننت‌های پایه Compose
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
 
-    // لایف‌سایکل و ViewModel در Compose
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
 
-    // ابزار دیباگ برای preview در Compose
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    kapt("com.github.bumptech.glide:compiler:4.16.0")
+
+    implementation("androidx.core:core-ktx:1.13.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.9.0")
+    implementation(platform("androidx.compose:compose-bom:2024.05.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.compose.material:material-icons-extended") // For Icons.Default.KeyboardArrowRight
+
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // For logging
+
+    // ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0") // for collectAsStateWithLifecycle
+
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+        // ... other dependencies
+        implementation("androidx.core:core-ktx:1.13.0")
+        implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+        implementation("androidx.activity:activity-compose:1.9.0")
+        implementation(platform("androidx.compose:compose-bom:2024.05.00"))
+        implementation("androidx.compose.ui:ui")
+        implementation("androidx.compose.ui:ui-graphics")
+        implementation("androidx.compose.ui:ui-tooling-preview")
+        implementation("androidx.compose.material3:material3")
+        implementation("androidx.compose.material:material-icons-core")
+        implementation("androidx.compose.material:material-icons-extended") // For Icons.Default.KeyboardArrowRight
+
+
+        // Retrofit & Gson
+        implementation("com.squareup.retrofit2:retrofit:2.9.0")
+        implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+        implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // For logging
+
+        // ViewModel
+        implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+        implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0") // for collectAsStateWithLifecycle
+
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2") // یا آخرین نسخه پایدار
+
+
+    // Coil for image loading
+        implementation("io.coil-kt:coil-compose:2.5.0")
 }
+
+
+
+
+
+
+    // ... other dependencies
 
