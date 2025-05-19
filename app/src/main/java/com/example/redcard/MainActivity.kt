@@ -121,7 +121,6 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
-// First version by kazem
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -662,8 +661,7 @@ fun SignUpForm(navController: NavController, signUpSheetState: SheetState, scope
     }
 }
 
-
-
+//mamad salad
 @Composable
 fun ImageContainer(modifier: Modifier = Modifier, imageModifier: Modifier) {
     Box(
@@ -714,18 +712,6 @@ fun ImageContainer(modifier: Modifier = Modifier, imageModifier: Modifier) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-//@Preview
-//@Composable
-//fun SignUpFormPreview() {
-//    SignUpForm()
-//}
-
-//fun onLoginSuccess() {
-//    // To do and pass to profile
-//    // Use in the login
-//}
-//@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyProfileScreen2(
     navController: NavHostController,
@@ -1042,6 +1028,7 @@ fun MyProfileScreen2(
 }
 
 // Reusable DetailRow composable for personal details
+//user profile
 @Composable
 fun DetailRow(
     icon: Painter,
